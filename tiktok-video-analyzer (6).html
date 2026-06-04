@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>● TikTok Affiliate Video Analyzer</title>
+<meta name="description" content="TikTok affiliate video analyzer - creator, product, and performance insights from your Video List export.">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f4f5f8; --surface:#ffffff; --surface2:#fafbfc; --surface3:#f1f3f6;
+  --border:#e7e9ee; --border2:#d8dbe2;
+  --ink:#191c22; --ink2:#5a6470; --ink3:#9aa1ad;
+  --accent:#0f7a5f; --accent-soft:#e3f3ee; --accent-ink:#0a5a45;
+  --amber:#c47512; --amber-soft:#fbf0dc;
+  --indigo:#4a5bd4; --indigo-soft:#e8ebfb;
+  --danger:#c8413f; --danger-soft:#fbe7e6;
+  --r:12px; --r-sm:9px;
+  --sh-sm:0 1px 2px rgba(20,30,50,.06),0 1px 3px rgba(20,30,50,.04);
+  --sh:0 4px 14px rgba(20,30,50,.08);
+  --side:#181b22; --side2:#20242e; --side-ink:#e9ebf0; --side-mut:#878d9c; --side-line:#2b2f3a;
+}
+[data-theme="dark"]{
+  --bg:#10131a; --surface:#181c24; --surface2:#1e232d; --surface3:#232936;
+  --border:#2a303c; --border2:#363d4b;
+  --ink:#e9ecf3; --ink2:#9aa3b4; --ink3:#646d7e;
+  --accent:#2bbd91; --accent-soft:#15302a; --accent-ink:#54d6ad;
+  --amber:#e0a13c; --amber-soft:#2e2613;
+  --indigo:#8a96ff; --indigo-soft:#1d2240;
+  --danger:#ef6a68; --danger-soft:#2f1817;
+  --sh-sm:0 1px 2px rgba(0,0,0,.3); --sh:0 6px 20px rgba(0,0,0,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;height:100%}
+body{font-family:'SN Pro','SNPro',-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  background:var(--bg);color:var(--ink);font-weight:480;font-size:14px;-webkit-font-smoothing:antialiased;letter-spacing:.1px}
+h1,h2,h3,h4,.black{font-weight:900;letter-spacing:-.4px;margin:0}
+.mut{color:var(--ink2)} .mut3{color:var(--ink3)}
+.tnum{font-variant-numeric:tabular-nums}
+
+.shell{display:flex;min-height:100vh}
+.sidebar{width:236px;flex:none;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;border-right:1px solid var(--side-line)}
+.brand{display:flex;align-items:center;gap:11px;padding:20px 18px 18px}
+.brand .mk{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:19px;background:linear-gradient(140deg,var(--accent),#0a5a45);box-shadow:0 4px 12px rgba(15,122,95,.45)}
+.brand .nm{font-weight:900;font-size:15px;line-height:1.05}
+.brand .tg{font-size:10px;color:var(--side-mut);font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-top:2px}
+.nav{padding:8px 12px;flex:1;display:flex;flex-direction:column;gap:2px}
+.nav .lbl{font-size:10px;color:var(--side-mut);font-weight:800;letter-spacing:.8px;text-transform:uppercase;padding:14px 10px 6px}
+.nav a{display:flex;align-items:center;gap:11px;padding:10px 11px;border-radius:9px;color:var(--side-mut);font-weight:700;font-size:13.5px;cursor:pointer;transition:.13s;text-decoration:none}
+.nav a:hover{background:rgba(255,255,255,.05);color:var(--side-ink)}
+.nav a.on{background:var(--accent);color:#fff}
+.nav a .ic{width:18px;text-align:center;font-size:15px}
+.nav a .ct{margin-left:auto;font-size:11px;font-weight:800;background:rgba(255,255,255,.1);padding:1px 7px;border-radius:7px}
+.nav a.on .ct{background:rgba(0,0,0,.18)}
+.side-foot{padding:14px 16px;border-top:1px solid var(--side-line);display:flex;flex-direction:column;gap:8px}
+.side-foot .sbtn{display:flex;align-items:center;gap:9px;background:transparent;border:1px solid var(--side-line);color:var(--side-mut);border-radius:8px;padding:8px 11px;font-weight:700;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.13s}
+.side-foot .sbtn:hover{color:var(--side-ink);border-color:var(--side-mut)}
+
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:14px;padding:20px 30px 14px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:20}
+.topbar .ttl{font-size:21px}
+.topbar .desc{font-size:12.5px;color:var(--ink2);margin-top:2px;font-weight:500}
+.topbar .sp{flex:1}
+.content{padding:24px 30px 70px;max-width:1280px;width:100%}
+
+.btn{background:var(--accent);color:#fff;border:none;border-radius:9px;padding:9px 15px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.13s;display:inline-flex;align-items:center;gap:7px}
+.btn:hover{filter:brightness(1.06);box-shadow:var(--sh-sm)}
+.btn:active{transform:translateY(1px)}
+.btn.ghost{background:var(--surface);border:1px solid var(--border2);color:var(--ink)}
+.btn.ghost:hover{border-color:var(--accent);filter:none}
+.btn.amber{background:var(--amber)}.btn.indigo{background:var(--indigo)}
+.btn.sm{padding:7px 12px;font-size:12.5px}.btn.tiny{padding:5px 10px;font-size:11.5px;border-radius:7px}
+.btn.icon{padding:7px 9px}
+input,select{background:var(--surface);border:1px solid var(--border2);color:var(--ink);border-radius:9px;padding:9px 11px;font-size:13.5px;font-family:inherit;font-weight:600;transition:.13s}
+input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+input::placeholder{color:var(--ink3)}
+label.fld{display:flex;flex-direction:column;gap:5px;font-size:11px;color:var(--ink2);font-weight:800;letter-spacing:.4px;text-transform:uppercase}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-sm)}
+.card.pad{padding:20px}
+.card-h{display:flex;align-items:flex-start;gap:12px;margin-bottom:16px}
+.card-h .grow{flex:1}
+.card-h h3{font-size:15.5px}.card-h p{font-size:12.5px;color:var(--ink2);margin:3px 0 0;font-weight:500}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.spacer{flex:1}
+.seg{display:inline-flex;background:var(--surface3);border:1px solid var(--border);border-radius:10px;padding:3px;gap:2px}
+.seg button{background:transparent;border:none;color:var(--ink2);font-weight:800;font-size:12px;padding:6px 12px;border-radius:7px;cursor:pointer;font-family:inherit;transition:.12s}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-sm)}
+
+.dz-wrap{display:grid;place-items:center;min-height:100vh;padding:30px}
+.dz{max-width:560px;width:100%;text-align:center}
+.dz .mk{width:60px;height:60px;border-radius:16px;display:grid;place-items:center;font-size:28px;margin:0 auto 18px;background:linear-gradient(140deg,var(--accent),#0a5a45);box-shadow:0 8px 24px rgba(15,122,95,.4)}
+.dz h1{font-size:25px;margin-bottom:8px}
+.dz .lead{color:var(--ink2);font-size:14px;margin-bottom:24px;font-weight:500}
+.drop{border:2px dashed var(--border2);border-radius:16px;background:var(--surface);padding:42px 24px;cursor:pointer;transition:.18s}
+.drop:hover,.drop.hover{border-color:var(--accent);background:var(--surface2)}
+.drop .big{font-size:38px;margin-bottom:10px}
+.drop b{font-size:16px}.drop p{color:var(--ink2);font-size:13px;margin:6px 0 0;font-weight:500}
+.filemeta{margin-top:14px;font-size:12.5px;font-weight:700;color:var(--accent)}
+.dz .hint{margin-top:18px;font-size:11.5px;color:var(--ink3);font-weight:600}
+
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+.stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px 17px;box-shadow:var(--sh-sm)}
+.stat .k{font-size:11px;color:var(--ink2);font-weight:800;text-transform:uppercase;letter-spacing:.5px;display:flex;align-items:center;gap:6px}
+.stat .k .dot{width:7px;height:7px;border-radius:3px;background:var(--accent)}
+.stat:nth-child(2) .dot{background:var(--indigo)}.stat:nth-child(3) .dot{background:var(--amber)}
+.stat:nth-child(4) .dot{background:#1f9d8b}.stat:nth-child(5) .dot{background:#7c8cff}.stat:nth-child(6) .dot{background:#d98324}
+.stat .v{font-size:25px;font-weight:900;margin-top:7px;line-height:1;letter-spacing:-.5px}
+.stat .v .small{font-size:14px;font-weight:800;line-height:1.3;letter-spacing:0}
+
+.view{display:none;animation:fade .22s ease}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.gap{height:18px}
+
+.tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--surface);box-shadow:var(--sh-sm);max-height:660px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{position:sticky;top:0;background:var(--surface2);text-align:left;padding:11px 13px;font-weight:800;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;color:var(--ink2);white-space:nowrap;border-bottom:1px solid var(--border);cursor:pointer;z-index:2}
+thead th:hover{color:var(--ink)}
+thead th .ar{font-size:9px;color:var(--accent)}
+tbody td{padding:11px 13px;border-bottom:1px solid var(--border);white-space:nowrap}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:var(--surface2)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.uname{color:var(--accent-ink);font-weight:800;text-decoration:none}
+.uname:hover{text-decoration:underline}
+.namecell{max-width:330px;white-space:normal;color:var(--ink2);font-weight:500;font-size:12px;line-height:1.4}
+.cbx{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex:none;margin:0}
+.tag{display:inline-flex;align-items:center;padding:2px 9px;border-radius:20px;font-size:10.5px;font-weight:900;letter-spacing:.2px}
+.tag.new{background:var(--accent-soft);color:var(--accent-ink)}
+.tag.ret{background:var(--indigo-soft);color:var(--indigo)}
+.tag.warn{background:var(--danger-soft);color:var(--danger)}
+.tag.gold{background:var(--amber-soft);color:var(--amber)}
+.empty{text-align:center;color:var(--ink2);padding:38px 20px;font-weight:600}
+.empty .em{font-size:30px;display:block;margin-bottom:8px;opacity:.5}
+
+.creator-toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.creator-list{display:flex;flex-direction:column;gap:10px}
+.creator{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--sh-sm);overflow:hidden;transition:.15s}
+.creator:hover{border-color:var(--border2)}
+.creator.open{border-color:var(--accent);box-shadow:var(--sh)}
+.creator .crow{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer}
+.avatar{width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;font-weight:900;font-size:16px;color:#fff;background:linear-gradient(140deg,var(--accent),#0a5a45)}
+.creator .who{min-width:0;flex:none;width:206px}
+.creator .who a{font-size:14.5px;font-weight:900;color:var(--ink);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.creator .who a:hover{color:var(--accent-ink)}
+.creator .who .sub{margin-top:4px}
+.vcount{display:flex;flex-direction:column;align-items:center;flex:none;width:74px;padding:0 4px;border-left:1px solid var(--border);border-right:1px solid var(--border)}
+.vcount .n{font-size:24px;font-weight:900;line-height:1;color:var(--accent-ink);letter-spacing:-.5px}
+.vcount .l{font-size:9.5px;font-weight:800;color:var(--ink3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.cmetrics{display:flex;gap:22px;flex:1;flex-wrap:wrap;padding-left:4px}
+.cmetric{min-width:60px}
+.cmetric .l{font-size:9.5px;font-weight:800;color:var(--ink3);text-transform:uppercase;letter-spacing:.4px}
+.cmetric .v{font-size:14.5px;font-weight:900;margin-top:2px;font-variant-numeric:tabular-nums}
+.creator .cacts{display:flex;align-items:center;gap:8px;flex:none}
+.star-btn{background:none;border:none;cursor:pointer;font-size:23px;line-height:1;color:var(--ink3);padding:3px 5px;transition:transform .12s,color .12s;font-family:inherit;border-radius:8px}
+.star-btn:hover{transform:scale(1.18);color:#f7b500}
+.star-btn.on{color:#f7b500;text-shadow:0 0 10px rgba(247,181,0,.35)}
+.status-pill{font-size:10px;font-weight:900;padding:2px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.3px;vertical-align:middle;display:inline-block}
+.s-ink3{background:var(--surface3);color:var(--ink3)}
+.s-indigo{background:var(--indigo-soft);color:var(--indigo)}
+.s-amber{background:var(--amber-soft);color:var(--amber)}
+.s-accent{background:var(--accent-soft);color:var(--accent-ink)}
+.s-danger{background:var(--danger-soft);color:var(--danger)}
+.crm-edit{display:flex;gap:12px;align-items:center;padding:12px 16px 12px 56px;border-bottom:1px solid var(--border);background:var(--surface);flex-wrap:wrap}
+.crm-edit label{font-size:10.5px;font-weight:800;color:var(--ink2);text-transform:uppercase;letter-spacing:.4px;display:flex;align-items:center;gap:7px}
+.crm-edit select,.crm-edit input{padding:6px 9px;font-size:12.5px}
+.crm-edit input{flex:1;min-width:160px;text-transform:none;letter-spacing:0}
+.chev{font-size:13px;color:var(--ink3);transition:.2s}
+.creator.open .chev{transform:rotate(180deg);color:var(--accent)}
+.creator .drill{display:none;border-top:1px solid var(--border);background:var(--surface2)}
+.creator.open .drill{display:block}
+.dvid{display:flex;align-items:center;gap:12px;padding:10px 16px 10px 56px;border-bottom:1px solid var(--border);font-size:12.5px}
+.dvid:last-child{border-bottom:none}
+.dvid .dt{width:120px;flex:none;font-weight:700;color:var(--ink2)}
+.dvid .nm{flex:1;color:var(--ink2);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;min-width:0}
+.dvid .g{width:70px;text-align:right;font-weight:800;font-variant-numeric:tabular-nums}
+.dvid .acts{display:flex;gap:6px;align-items:center;flex:none}
+
+.datechips{display:flex;flex-wrap:wrap;gap:9px}
+.datemonth{margin-bottom:10px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface);box-shadow:var(--sh-sm)}
+.datemonth:last-child{margin-bottom:0}
+.dm-head{font-size:13px;font-weight:900;color:var(--ink);padding:12px 15px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.dm-head:hover{background:var(--surface2)}
+.dm-caret{font-size:11px;color:var(--ink3);transition:transform .18s}
+.datemonth.open .dm-caret{transform:rotate(90deg);color:var(--accent)}
+.dm-head .dm-n{font-size:10.5px;font-weight:700;color:var(--ink3);letter-spacing:.2px}
+.dm-head .dm-sel{margin-left:auto;font-size:11px;font-weight:800;color:var(--accent-ink);background:var(--accent-soft);border:1px solid var(--border);border-radius:7px;padding:3px 9px;cursor:pointer}
+.dm-head .dm-sel:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.dm-body{display:none;padding:0 15px 14px;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:8px}
+.datemonth.open .dm-body{display:grid}
+.dc.day{min-width:0;justify-content:center;text-align:center}
+.dc.day .dnum{font-size:14px}
+.sel-bar{position:sticky;top:78px;z-index:15;background:var(--accent);color:#fff;border-radius:var(--r);padding:11px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:var(--sh);margin-bottom:14px}
+.sel-bar b{font-size:14px}
+.sel-bar .btn.ghost{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff}
+.sel-bar .btn.ghost:hover{background:rgba(255,255,255,.25)}
+.info{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:50%;background:var(--surface3);color:var(--ink2);font-size:10px;font-weight:900;cursor:help;margin-left:6px;border:1px solid var(--border);vertical-align:middle;font-style:normal}
+.info:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.card-h .info{transform:translateY(-1px)}
+.dc{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border2);border-radius:10px;padding:9px 13px;cursor:pointer;font-weight:800;font-size:13px;transition:.13s;box-shadow:var(--sh-sm)}
+.dc:hover{border-color:var(--accent)}
+.dc.sel{background:var(--accent);border-color:var(--accent);color:#fff}
+.dc .n{background:var(--surface3);color:var(--ink2);border-radius:7px;padding:1px 7px;font-size:11px;font-weight:900}
+.dc.sel .n{background:rgba(0,0,0,.2);color:#fff}
+.dgroup{margin-top:14px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--surface);box-shadow:var(--sh-sm)}
+.dgroup .gh{display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.dgroup .gh .dt{font-weight:900;font-size:16px}
+.dgroup .gh .cn{color:var(--ink2);font-size:12.5px;font-weight:700}
+.lrow{display:flex;align-items:center;gap:11px;padding:9px 16px;border-bottom:1px solid var(--border);font-size:12.5px}
+.lrow:last-child{border-bottom:none}.lrow:hover{background:var(--surface2)}
+.lrow .u{color:var(--accent-ink);font-weight:800;width:160px;flex:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lrow .lk{color:var(--ink3);flex:1;font-family:ui-monospace,'SF Mono',monospace;font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.lrow .g{font-weight:800;width:64px;text-align:right;font-variant-numeric:tabular-nums}
+.lrow .acts{display:flex;gap:6px;flex:none}
+
+.rank{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;font-weight:900;font-size:12.5px;background:var(--surface3);color:var(--ink2)}
+.rank.r1{background:var(--amber);color:#3a2600}.rank.r2{background:#c5cad4;color:#23262c}.rank.r3{background:#cd864a;color:#fff}
+.insight-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mini .lrow{padding:9px 14px}.mini .lrow .u{width:130px}
+
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.cmp .cc{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:18px}
+.cmp .cc h4{font-size:16px;margin-bottom:14px}
+.cmp .ln{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px}
+.cmp .ln:last-child{border:none}.cmp .ln span{color:var(--ink2);font-weight:600}.cmp .ln b{font-weight:900;font-variant-numeric:tabular-nums}
+.cmp .ln b.win{color:var(--accent);position:relative;padding-right:15px}
+.cmp .ln b.win::after{content:"▲";font-size:8px;position:absolute;right:0;top:5px}
+
+.filterbar{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+.presets{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.colpop{position:fixed;background:var(--surface);border:1px solid var(--border2);border-radius:11px;padding:12px;box-shadow:var(--sh);z-index:60;display:none;max-height:340px;overflow:auto;min-width:210px}
+.colpop label{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:5px 3px;cursor:pointer;font-weight:600}
+
+.modal{position:fixed;inset:0;background:rgba(10,15,25,.5);display:none;align-items:center;justify-content:center;z-index:120;padding:20px;backdrop-filter:blur(4px)}
+.modal.on{display:flex}
+.modal .box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);max-width:660px;width:100%;max-height:88vh;overflow:auto;box-shadow:var(--sh)}
+.modal .mh{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);z-index:2}
+.modal .mh h3{flex:1;font-size:16px}
+.modal .mb{padding:20px}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:0 22px}
+.kv .it{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px}
+.kv .it span{color:var(--ink2);font-weight:600}.kv .it b{font-weight:900;font-variant-numeric:tabular-nums}
+.x{cursor:pointer;font-size:22px;color:var(--ink3);line-height:1;font-weight:700}.x:hover{color:var(--accent)}
+.notice{background:var(--amber-soft);border:1px solid var(--border);border-left:3px solid var(--amber);border-radius:9px;padding:11px 13px;font-size:12px;color:var(--ink2);margin-top:14px;font-weight:600}
+
+.drawer{position:fixed;top:0;right:0;bottom:0;width:430px;max-width:92vw;background:var(--surface);border-left:1px solid var(--border);z-index:110;transform:translateX(102%);transition:.3s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;box-shadow:var(--sh)}
+.drawer.on{transform:none}
+.drawer .dh{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px}
+.drawer .dh h3{flex:1;font-size:17px}
+.drawer .db{flex:1;overflow:auto}
+.drawer .df{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap}
+.bitem{padding:12px 18px;border-bottom:1px solid var(--border);font-size:12.5px;position:relative}
+.bitem .u{color:var(--accent-ink);font-weight:800}
+.bitem .meta{color:var(--ink3);font-weight:600;font-size:11.5px}
+.bitem .lk{color:var(--ink3);font-family:ui-monospace,monospace;font-size:11px;word-break:break-all;margin-top:4px}
+.bitem .rm{position:absolute;top:12px;right:16px;cursor:pointer;color:var(--danger);font-weight:900}
+.count-pill{font-size:11px;font-weight:900;background:var(--accent);color:#fff;border-radius:20px;padding:2px 8px}
+
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--ink);color:var(--surface);padding:12px 20px;border-radius:11px;font-weight:800;font-size:13.5px;z-index:200;opacity:0;transition:.25s;box-shadow:var(--sh)}
+.toast.on{transform:translateX(-50%);opacity:1}
+.hidden{display:none!important}
+
+@media(max-width:980px){
+  .sidebar{position:fixed;z-index:50;transform:translateX(-100%);transition:.25s}
+  .sidebar.open{transform:none;box-shadow:var(--sh)}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .insight-grid,.cmp{grid-template-columns:1fr}
+  .content,.topbar{padding-left:18px;padding-right:18px}
+  .creator .who{width:auto;flex:1}.cmetrics{display:none}
+  .menu-btn{display:inline-flex!important}
+}
+.menu-btn{display:none}
+</style>
+</head>
+<body>
+<div id="loader" class="dz-wrap">
+  <div class="dz">
+    <div class="mk">🧩</div>
+    <h1>● TikTok Affiliate Video Analyzer</h1>
+    <p class="lead">TikTok creator &amp; performance intelligence</p>
+    <div class="drop" id="dropzone">
+      <div class="big">📥</div>
+      <b>Drop your TikTok Video List .xlsx here</b>
+      <p>or click to browse - parsed locally in your browser, nothing is uploaded</p>
+      <div class="filemeta" id="filemeta"></div>
+    </div>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.csv" class="hidden">
+    <p class="hint">Expects columns: Video link · Video post date · Creator username · GMV · CTR · GPM …</p>
+  </div>
+</div>
+
+<div class="shell hidden" id="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><div class="mk">🧩</div><div><div class="nm">Video Analyzer</div><div class="tg">Wooden Puzzles</div></div></div>
+    <nav class="nav" id="nav">
+      <div class="lbl">Analyze</div>
+      <a data-nav="overview" class="on" title="Headline totals and the performance trend chart."><span class="ic">📊</span> Overview</a>
+      <a data-nav="dates" title="Pull video links grouped by the day they were posted — ready to copy/paste."><span class="ic">📆</span> Dates</a>
+      <a data-nav="creators" title="Every creator as one row with a video count - expand to drill into their videos."><span class="ic">👤</span> Creators <span class="ct" id="ctCreators">0</span></a>
+      <a data-nav="products" title="Performance grouped by your 11 products, matched from video captions/hashtags."><span class="ic">🧩</span> Products <span class="ct" id="ctProducts">0</span></a>
+      <a data-nav="top" title="Leaderboard plus insight panels: hidden gems, needs-a-fix, refunds, efficiency."><span class="ic">🏆</span> Top Performers</a>
+      <a data-nav="all" title="The full video table with search, filters, presets, columns, and CSV export."><span class="ic">📋</span> All Videos <span class="ct" id="ctAll">0</span></a>
+    </nav>
+    <div class="side-foot">
+      <button class="sbtn" id="dateFmtBtn" title="Switch how dates are shown everywhere — between '29 May, 2026' and '2026-05-29'."><span>📅</span><span id="dateFmtLbl">29 May, 2026</span></button>
+      <button class="sbtn" id="themeBtn" title="Toggle between light and dark appearance. Your choice is remembered."><span id="themeIc">🌙</span><span>Dark mode</span></button>
+      <button class="sbtn" id="resetBtn" title="Clear the current data and load a different Video List file."><span>↺</span><span>Load new file</span></button>
+      <label style="font-size:9px;display:block;text-align:center;margin-top:6px;opacity:.7">BUILT AS A TOOL, USED LIKE A WEAPON.</label>
+<!-- <div class="lbl">BUILT AS A TOOL, USED LIKE A WEAPON.</div> -->
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="btn ghost icon menu-btn" id="menuBtn">☰</button>
+      <div><div class="ttl" id="pageTitle">Overview</div><div class="desc" id="pageDesc">Headline numbers and trend across your file</div></div>
+      <div class="sp"></div>
+      <button class="btn ghost" id="basketBtn" title="Open your shortlist — the basket of videos you've ticked across any tab. Copy or export them for Spark Ads or sharing.">🛒 Shortlist <span class="count-pill" id="basketCount">0</span></button>
+    </div>
+
+    <div class="content">
+      <section class="view on" id="v-overview">
+        <div class="stats" id="statsRow"></div>
+        <div class="gap"></div>
+        <div class="card pad">
+          <div class="card-h">
+            <div class="grow"><h3>Performance trend<span class="info" title="Plots the selected metric summed per posting day, across the full date range in your file. Use the toggle to switch between GMV, video count, impressions, and items sold.">i</span></h3><p>Momentum across the date range in your file</p></div>
+            <div class="seg" id="metricSeg">
+              <button data-metric="gmv" class="on">GMV</button>
+              <button data-metric="count">Videos</button>
+              <button data-metric="impressions">Impressions</button>
+              <button data-metric="sold">Sold</button>
+            </div>
+          </div>
+          <div style="height:300px;position:relative"><canvas id="trendChart"></canvas></div>
+        </div>
+        <div class="gap"></div>
+        <div class="insight-grid">
+          <div class="card pad">
+            <div class="card-h"><div class="grow"><h3>Top creators by GMV</h3><p>Your biggest earners</p></div></div>
+            <div class="mini" id="ovTopCreators"></div>
+          </div>
+          <div class="card pad">
+            <div class="card-h"><div class="grow"><h3>Most recent posting days</h3><p>Latest activity in the file</p></div></div>
+            <div class="mini" id="ovRecentDates"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="v-dates">
+        <div class="card pad">
+          <div class="card-h"><div class="grow"><h3>Select posting dates</h3><p>Months are collapsed by default — open one to pick days. Use the quick ranges to jump straight to a period.</p></div></div>
+          <div class="row" style="margin-bottom:10px">
+            <span class="mut" style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.4px">Quick range</span>
+            <button class="btn ghost sm qr" data-qr="7" title="Select all days within 7 days of the most recent post.">Last 7 days</button>
+            <button class="btn ghost sm qr" data-qr="30" title="Select all days within 30 days of the most recent post.">Last 30 days</button>
+            <button class="btn ghost sm qr" data-qr="month" title="Select every day in the most recent month.">Latest month</button>
+            <button class="btn ghost sm" id="selRecent" title="Select the 7 most recent days that have videos.">Last 7 active days</button>
+            <button class="btn ghost sm" id="selAll" title="Select every posting day in the file.">Select all</button>
+            <button class="btn ghost sm" id="selNone" title="Deselect all dates.">Clear</button>
+          </div>
+          <div class="row" style="margin-bottom:14px">
+            <button class="btn ghost sm" id="expandAllM" title="Open every month.">⊞ Expand all</button>
+            <button class="btn ghost sm" id="collapseAllM" title="Collapse every month.">⊟ Collapse all</button>
+          </div>
+          <div id="dateChips"></div>
+        </div>
+        <div id="dateOut"></div>
+      </section>
+
+      <section class="view" id="v-creators">
+        <div class="creator-toolbar">
+          <input type="text" id="creatorSearch" placeholder="🔍 Filter creator…" style="min-width:190px" title="Type to filter the creator list by username.">
+          <select id="creatorSort" title="Re-order the creator list by this metric (totals are summed across all of a creator's videos).">
+            <option value="videos">Sort: Video count</option>
+            <option value="gmv">Sort: Total GMV</option>
+            <option value="sold">Sort: Items sold</option>
+            <option value="avgCtr">Sort: Avg CTR</option>
+            <option value="impressions">Sort: Impressions</option>
+            <option value="likes">Sort: Likes</option>
+            <option value="username">Sort: Name (A–Z)</option>
+          </select>
+          <select id="creatorPostsFilter" title="Filter by how many videos the creator posted. '1-video creators' are the ones worth nudging to post again.">
+            <option value="">All creators</option>
+            <option value="one">Only 1-video creators</option>
+            <option value="ret">Only returning (2+)</option>
+          </select>
+          <select id="creatorOutreachFilter" title="Filter by outreach pipeline stage (from the log you keep below).">
+            <option value="">Any outreach stage</option>
+            <option value="not_messaged">Not messaged yet</option>
+            <option value="awaiting">Messaged · awaiting re-post</option>
+            <option value="responded">Responded (re-posted)</option>
+            <option value="followup">Follow-up due</option>
+            <option value="__set">Any log entry set</option>
+            <option value="New">Status: New</option>
+            <option value="Contacted">Status: Contacted</option>
+            <option value="Sample sent">Status: Sample sent</option>
+            <option value="Code given">Status: Code given</option>
+            <option value="Spark-boosted">Status: Spark-boosted</option>
+            <option value="Skip">Status: Skip</option>
+          </select>
+          <span class="mut" style="font-size:12px;font-weight:700;margin-left:auto" id="creatorSummary"></span>
+        </div>
+        <div class="creator-toolbar" style="margin-top:-4px">
+          <button class="btn ghost sm" id="copyContacts" title="Copy the @usernames + profile links of every creator currently shown (after filters) — handy to paste into a DM/WhatsApp batch.">📋 Copy contact list</button>
+          <span style="width:1px;height:22px;background:var(--border)"></span>
+          <button class="btn ghost sm" id="exportLog" title="Download your outreach log (status, messaged date, re-posted, follow-up, notes) as a JSON file you can back up or move to another computer.">⬇ Export log</button>
+          <button class="btn ghost sm" id="importLog" title="Load an outreach-log JSON file. It MERGES with what's here — for any creator in both, the most recently edited entry wins. Nothing already saved is lost.">⬆ Import log</button>
+          <input type="file" id="importLogFile" accept="application/json,.json" class="hidden">
+          <span class="info" title="Your outreach log auto-saves in this browser as you edit. Export to JSON for a durable backup or to carry it to another device; Import merges a file back in safely.">i</span>
+        </div>
+        <div class="creator-list" id="creatorList"></div>
+        <div class="gap"></div>
+        <div class="card pad">
+          <div class="card-h"><div class="grow"><h3>Compare two creators</h3><p>Head-to-head — the stronger value on each metric is marked.</p></div></div>
+          <div class="row">
+            <label class="fld" style="flex:1;min-width:200px">Creator A<select id="cmpA"></select></label>
+            <label class="fld" style="flex:1;min-width:200px">Creator B<select id="cmpB"></select></label>
+          </div>
+          <div id="cmpOut"></div>
+        </div>
+      </section>
+
+      <section class="view" id="v-products">
+        <div class="creator-toolbar">
+          <span class="mut" style="font-size:12px;font-weight:700">Sort by</span>
+          <select id="productSort" title="Re-order products by this metric.">
+            <option value="videos">Video count</option>
+            <option value="gmv">Total GMV</option>
+            <option value="sold">Items sold</option>
+            <option value="avgCtr">Avg CTR</option>
+            <option value="impressions">Impressions</option>
+          </select>
+          <span class="info" title="Each video is matched to one product by scanning its caption/hashtags for keywords (e.g. #dinosaur → Dinosaur Puzzle). Videos with no product keyword fall into 'Unmatched'. Matching is best-effort — use the Unmatched group to spot captions that need clearer hashtags.">i</span>
+          <span class="mut" style="font-size:12px;font-weight:700;margin-left:auto" id="productSummary"></span>
+        </div>
+        <div class="creator-list" id="productList"></div>
+      </section>
+
+      <section class="view" id="v-top">
+        <div class="card pad">
+          <div class="card-h">
+            <div class="grow"><h3>Leaderboard<span class="info" title="The top 40 individual videos ranked by the metric you pick (GMV, items sold, CTR, GPM, or likes). These are your best-performing organic posts — the natural starting point for Spark Ad boosting.">i</span></h3><p>The videos already converting organically — your Spark Ad shortlist starts here.</p></div>
+            <div class="seg" id="rankSeg">
+              <button data-rank="gmv" class="on">GMV</button><button data-rank="sold">Sold</button>
+              <button data-rank="ctr">CTR</button><button data-rank="gpm">GPM</button><button data-rank="likes">Likes</button>
+            </div>
+          </div>
+          <div class="tbl-wrap" style="max-height:520px">
+            <table><thead><tr>
+              <th>#</th><th>Creator</th><th>Date</th><th class="num">GMV</th><th class="num">Sold</th>
+              <th class="num">CTR</th><th class="num">GPM</th><th class="num">Impr.</th><th class="num">Likes</th><th></th><th>🛒</th>
+            </tr></thead><tbody id="topBody"></tbody></table>
+          </div>
+          <div class="row" style="margin-top:14px"><button class="btn amber sm" id="addTop10" title="Adds the current top 10 videos (by the selected ranking metric) to your shortlist in one click.">⭐ Add top 10 to shortlist</button></div>
+        </div>
+        <div class="gap"></div>
+        <div class="insight-grid">
+          <div class="card pad"><div class="card-h"><div class="grow"><h3>⚡ Hidden gems <span class="tag gold">scale these</span><span class="info" title="Videos whose impressions are at or below the median for the file, but with CTR ≥ 3% OR GPM ≥ 30. The creative converts well — it just hasn't been shown to many people yet, so it's a strong candidate to boost as a Spark Ad.">i</span></h3><p>High CTR/GPM, low impressions — proven creative not yet scaled.</p></div></div><div class="mini" id="gemsList"></div></div>
+          <div class="card pad"><div class="card-h"><div class="grow"><h3>🔧 Needs a fix<span class="info" title="Videos with $0 GMV but at least 5 combined likes + comments. People are engaging but not buying — usually means the shoppable product link is missing/wrong, or the video is worth reposting to Stories to drive traffic.">i</span></h3><p>Strong engagement but zero GMV — repost or check the shoppable link.</p></div></div><div class="mini" id="fixList"></div></div>
+          <div class="card pad"><div class="card-h"><div class="grow"><h3>⚠️ Refund flags<span class="info" title="Videos with at least one refunded item or any refunded GMV. Worth checking for a product-quality or expectation-mismatch issue in the creative.">i</span></h3><p>Refunded items or GMV — watch for product/creative issues.</p></div></div><div class="mini" id="refundList"></div></div>
+          <div class="card pad"><div class="card-h"><div class="grow"><h3>💸 Efficiency<span class="info" title="Creators who have BOTH a paid cost (commission + flat fee) AND sales, ranked by GMV ÷ cost. Higher number = more revenue earned per dollar paid out. The ∞ symbol means sales with no recorded cost.">i</span></h3><p>GMV generated per $ of commission + flat fee. Cheap-and-effective at the top.</p></div></div><div class="mini" id="effList"></div></div>
+        </div>
+      </section>
+
+      <section class="view" id="v-all">
+        <div class="card pad">
+          <div class="presets">
+            <span class="mut" style="font-size:12px;font-weight:800">Presets:</span>
+            <button class="btn indigo sm preset" data-preset="spark" title="Filters to videos with CTR ≥ 2% and GMV ≥ $1 — creatives already converting, ideal to boost as Spark Ads.">⚡ Spark Ad candidates</button>
+            <button class="btn indigo sm preset" data-preset="fix" title="Videos with $0 GMV but ≥ 5 combined likes + comments — engaging but not selling.">🔧 Needs a fix</button>
+            <button class="btn indigo sm preset" data-preset="refund" title="Videos with any refunded items or refunded GMV.">⚠️ Refund risk</button>
+            <button class="btn indigo sm preset" data-preset="sellers" title="Any video that generated GMV above $0.">💰 Has sales</button>
+            <button class="btn ghost sm" id="clearFilters" title="Reset all filters and presets back to showing every video.">✕ Clear</button>
+          </div>
+          <div class="filterbar">
+            <label class="fld">Search name / hashtags<input type="text" id="fSearch" placeholder="#dinosaurpuzzle…" style="min-width:210px"></label>
+            <label class="fld">Creator<select id="fCreator"><option value="">All</option></select></label>
+            <label class="fld">From<input type="date" id="fFrom"></label>
+            <label class="fld">To<input type="date" id="fTo"></label>
+            <label class="fld">Min GMV<input type="number" id="fGmv" min="0" step="1" style="width:88px" placeholder="0"></label>
+            <label class="fld">Min CTR %<input type="number" id="fCtr" min="0" step="0.1" style="width:88px" placeholder="0"></label>
+            <label class="fld">Min sold<input type="number" id="fSold" min="0" step="1" style="width:88px" placeholder="0"></label>
+          </div>
+          <div class="row" style="margin-top:14px">
+            <span class="mut" style="font-size:12.5px;font-weight:800" id="resultCount"></span>
+            <div class="spacer"></div>
+            <button class="btn ghost sm" id="colBtn" title="Show or hide individual columns in the table. Your selection is remembered.">⚙ Columns</button>
+            <button class="btn ghost sm" id="exportCsv" title="Download the currently filtered videos as a CSV spreadsheet, including the video link.">⬇ Export CSV</button>
+            <button class="btn amber sm" id="addAllBasket" title="Add every video currently shown (after filters) to your shortlist.">⭐ Shortlist visible</button>
+          </div>
+        </div>
+        <div class="gap"></div>
+        <div class="tbl-wrap"><table id="allTable"><thead><tr id="allHead"></tr></thead><tbody id="allBody"></tbody></table></div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<div class="colpop" id="colPop"></div>
+
+<div class="drawer" id="drawer">
+  <div class="dh"><h3>🛒 Shortlist <span class="count-pill" id="basketCount2">0</span></h3><span class="x" id="closeDrawer">✕</span></div>
+  <div class="db" id="basketBody"></div>
+  <div class="df">
+    <button class="btn sm" id="copyBasket" title="Copy just the video URLs from your shortlist, one per line.">📋 Copy links</button>
+    <button class="btn indigo sm" id="copyBasketLabeled" title="Copy your shortlist with each creator's @username above their link.">📋 With creator</button>
+    <button class="btn amber sm" id="csvBasket" title="Download your shortlist as a CSV (creator, date, GMV, sold, CTR, link).">⬇ CSV</button>
+    <button class="btn ghost sm" id="clearBasket" title="Empty your shortlist.">🗑 Clear</button>
+  </div>
+</div>
+
+<div class="modal" id="modal"><div class="box">
+  <div class="mh"><h3 id="modalTitle">Video</h3><span class="x" id="closeModal">✕</span></div>
+  <div class="mb" id="modalBody"></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+const S={rows:[],dates:[],creators:[],products:[],basket:new Map(),
+  dateFmt:localStorage.getItem('ava_datefmt')||'nice',
+  theme:localStorage.getItem('ava_theme')||'light',
+  trendMetric:'gmv',rankBy:'gmv',
+  allSort:{key:'gmv',dir:-1},creatorSortKey:'videos',creatorPostsFilter:'',creatorOutreachFilter:'',productSortKey:'videos',
+  hiddenCols:new Set(JSON.parse(localStorage.getItem('ava_hidecols')||'[]')),
+  openCreators:new Set(),openProducts:new Set(),openMonths:new Set(),monthsInit:false,
+  crm:JSON.parse(localStorage.getItem('ava_crm')||'{}'),
+  chart:null,customPred:null};
+
+const STATUSES=['New','Contacted','Sample sent','Code given','Spark-boosted','Skip'];
+const STATUS_COLOR={'New':'ink3','Contacted':'indigo','Sample sent':'amber','Code given':'accent','Spark-boosted':'accent','Skip':'danger'};
+
+// Lucas & Friends 11-SKU map. Keyword matching is best-effort on caption/hashtags.
+const PRODUCTS=[
+  {asin:'B0DKVLRYQC',name:'Alphabet Puzzle',kw:['alphabet','abc','letters','letter','abcs','peg puzzle','pegpuzzle']},
+  {asin:'B0DKYGQYVJ',name:'Number Puzzle',kw:['number','numbers','counting','count','123','math']},
+  {asin:'B0DKYBVVL8',name:'Shape Puzzle',kw:['shape','shapes','shapesorter']},
+  {asin:'B0DKY8L1H2',name:'Farm Animals',kw:['farm','farmanimal','farmanimals','barn']},
+  {asin:'B0DKY9Q5YH',name:'Wild Animals',kw:['wild','wildanimal','wildanimals','safari','zoo','jungle']},
+  {asin:'B0DKYTTR37',name:'Vehicle Puzzle',kw:['vehicle','vehicles','cars','transport']},
+  {asin:'B0DKYR8Q7F',name:'Dinosaur Puzzle',kw:['dino','dinos','dinosaur','dinosaurs','jurassic']},
+  {asin:'B0DKFPSFGQ',name:'Sorting & Stacking',kw:['sorting','sort','stacking','stack','stacker','sortandstack']},
+  {asin:'B0GQZNDB82',name:'Construction Vehicles',kw:['construction','excavator','digger','bulldozer','crane','dumptruck']},
+  {asin:'B0GTQWWGQ7',name:'Lucas Family & Friends',kw:['family and friends','familyandfriends','lucasfamily','figurine','figurines','play figures','peg dolls','pegdolls']},
+  {asin:'B0GTR7WHSK',name:'Clock Shape Sorting',kw:['clock','oclock','time','telltime','clockshape']}
+];
+
+const COLS=[
+  {key:'username',label:'Creator',type:'str'},{key:'dateStr',label:'Date',type:'date'},
+  {key:'name',label:'Video name',type:'name'},{key:'gmv',label:'GMV',type:'cur'},
+  {key:'sold',label:'Sold',type:'int'},{key:'svGmv',label:'SV GMV',type:'cur'},
+  {key:'aov',label:'AOV',type:'cur'},{key:'commission',label:'Commission',type:'cur'},
+  {key:'flatFee',label:'Flat fee',type:'cur'},{key:'orders',label:'Orders',type:'int'},
+  {key:'impressions',label:'Impr.',type:'int'},{key:'ctr',label:'CTR',type:'pct'},
+  {key:'gpm',label:'GPM',type:'num'},{key:'refunded',label:'Refunded',type:'int'},
+  {key:'refundedGmv',label:'Ref. GMV',type:'cur'},{key:'comments',label:'Comments',type:'int'},
+  {key:'likes',label:'Likes',type:'int'}];
+
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('on'),1800);}
+function parseNum(v){if(v==null)return 0;let s=String(v).trim();if(s===''||s==='--'||s==='—')return 0;s=s.replace(/[%,$\s]/g,'');const n=parseFloat(s);return isNaN(n)?0:n;}
+function normDate(v){if(v==null)return '';if(v instanceof Date){const y=v.getUTCFullYear(),m=String(v.getUTCMonth()+1).padStart(2,'0'),d=String(v.getUTCDate()).padStart(2,'0');return `${y}-${m}-${d}`;}let s=String(v).trim();let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);if(m)return `${m[3]}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`;const d=new Date(s);if(!isNaN(d))return normDate(d);return s;}
+const MF=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function fmtDate(iso){if(!iso)return '';const m=iso.match(/^(\d{4})-(\d{2})-(\d{2})/);if(!m)return iso;if(S.dateFmt==='iso')return iso;return `${parseInt(m[3])} ${MF[parseInt(m[2])-1]}, ${m[1]}`;}
+function money(n){return '$'+(Math.round(n*100)/100).toLocaleString(undefined,{minimumFractionDigits:0,maximumFractionDigits:2});}
+function num(n){return n.toLocaleString();}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function unameFromLink(l){const m=String(l||'').match(/@([^/]+)\//);return m?m[1]:'';}
+function initial(u){return (u||'?').replace(/[^a-z0-9]/gi,'').charAt(0).toUpperCase()||'?';}
+
+const dz=$('#dropzone'),fi=$('#fileInput');
+dz.onclick=()=>fi.click();
+dz.ondragover=e=>{e.preventDefault();dz.classList.add('hover');};
+dz.ondragleave=()=>dz.classList.remove('hover');
+dz.ondrop=e=>{e.preventDefault();dz.classList.remove('hover');if(e.dataTransfer.files[0])readFile(e.dataTransfer.files[0]);};
+fi.onchange=e=>{if(e.target.files[0])readFile(e.target.files[0]);};
+function readFile(file){$('#filemeta').textContent='Reading '+file.name+' …';const r=new FileReader();r.onload=ev=>{try{const wb=XLSX.read(ev.target.result,{type:'array',cellDates:true});const ws=wb.Sheets[wb.SheetNames[0]];ingest(XLSX.utils.sheet_to_json(ws,{defval:'',raw:false}),file.name);}catch(err){$('#filemeta').textContent='⚠ '+err.message;}};r.readAsArrayBuffer(file);}
+function findCol(keys,c){for(const k of keys){const lk=k.toLowerCase().trim();for(const x of c){if(lk===x||lk.includes(x))return k;}}return null;}
+function ingest(json){
+  if(!json.length){$('#filemeta').textContent='⚠ No rows found.';return;}
+  const k=Object.keys(json[0]);
+  const c={name:findCol(k,['video name','name']),link:findCol(k,['video link','link','url']),date:findCol(k,['video post date','post date','date']),user:findCol(k,['creator username','creator','username']),gmv:findCol(k,['gmv']),sold:findCol(k,['affiliate items sold','items sold','sold']),svGmv:findCol(k,['shoppable video gmv','sv gmv']),aov:findCol(k,['avg. order value','order value','aov']),commission:findCol(k,['est. commission','commission']),flatFee:findCol(k,['est. flat fee','flat fee']),orders:findCol(k,['affiliate orders','orders']),impressions:findCol(k,['impressions']),ctr:findCol(k,['ctr']),gpm:findCol(k,['gpm']),refunded:findCol(k,['items refunded','refunded']),refundedGmv:findCol(k,['refunded gmv']),comments:findCol(k,['comments']),likes:findCol(k,['likes'])};
+  S.rows=json.map(r=>{const link=c.link?String(r[c.link]).trim():'';return{name:c.name?String(r[c.name]).trim():'',link,dateStr:normDate(c.date?r[c.date]:''),username:(c.user?String(r[c.user]).trim():'')||unameFromLink(link),gmv:parseNum(r[c.gmv]),sold:parseNum(r[c.sold]),svGmv:parseNum(r[c.svGmv]),aov:parseNum(r[c.aov]),commission:parseNum(r[c.commission]),flatFee:parseNum(r[c.flatFee]),orders:parseNum(r[c.orders]),impressions:parseNum(r[c.impressions]),ctr:parseNum(r[c.ctr]),gpm:parseNum(r[c.gpm]),refunded:parseNum(r[c.refunded]),refundedGmv:parseNum(r[c.refundedGmv]),comments:parseNum(r[c.comments]),likes:parseNum(r[c.likes])};}).filter(r=>r.link);
+  buildDerived();
+  $('#loader').classList.add('hidden');$('#shell').classList.remove('hidden');
+  renderAll();toast(`Loaded ${S.rows.length} videos · ${S.creators.length} creators`);
+}
+function buildDerived(){
+  const dm={};S.rows.forEach(r=>{if(r.dateStr)dm[r.dateStr]=(dm[r.dateStr]||0)+1;});
+  S.dates=Object.keys(dm).sort().map(d=>({date:d,count:dm[d]}));
+  const cm={};
+  S.rows.forEach(r=>{const u=r.username||'(unknown)';if(!cm[u])cm[u]={username:u,videos:0,gmv:0,sold:0,commission:0,flatFee:0,impressions:0,ctrSum:0,ctrN:0,likes:0,comments:0,refunded:0,refundedGmv:0,vids:[]};const c=cm[u];c.videos++;c.gmv+=r.gmv;c.sold+=r.sold;c.commission+=r.commission;c.flatFee+=r.flatFee;c.impressions+=r.impressions;if(r.impressions>0){c.ctrSum+=r.ctr;c.ctrN++;}c.likes+=r.likes;c.comments+=r.comments;c.refunded+=r.refunded;c.refundedGmv+=r.refundedGmv;c.vids.push(r);});
+  S.creators=Object.values(cm).map(c=>({...c,avgCtr:c.ctrN?c.ctrSum/c.ctrN:0,returning:c.videos>1,cost:c.commission+c.flatFee,roi:(c.commission+c.flatFee)>0?c.gmv/(c.commission+c.flatFee):(c.gmv>0?Infinity:0)}));
+  // products
+  const blank=()=>({videos:0,gmv:0,sold:0,impressions:0,ctrSum:0,ctrN:0,likes:0,comments:0,vids:[],creators:new Set()});
+  const pacc=PRODUCTS.map(p=>({...p,...blank()}));
+  const unmatched={asin:'',name:'Unmatched',kw:[],...blank()};
+  S.rows.forEach(r=>{const idx=matchProduct(r.name);const tgt=idx>=0?pacc[idx]:unmatched;tgt.videos++;tgt.gmv+=r.gmv;tgt.sold+=r.sold;tgt.impressions+=r.impressions;if(r.impressions>0){tgt.ctrSum+=r.ctr;tgt.ctrN++;}tgt.likes+=r.likes;tgt.comments+=r.comments;tgt.vids.push(r);tgt.creators.add(r.username);r._prod=idx>=0?pacc[idx].name:'Unmatched';});
+  S.products=pacc.concat(unmatched.videos?[unmatched]:[]).map(p=>({...p,avgCtr:p.ctrN?p.ctrSum/p.ctrN:0,nCreators:p.creators.size}));
+}
+function matchProduct(name){
+  let t=(name||'').toLowerCase().replace(/[#_]/g,' ');
+  t=t.replace(/lucas\s*(and|&|n)\s*friends/g,' ').replace(/lucasandfriends/g,' '); // drop brand name so it can't false-match
+  let best=-1,bestHits=0;
+  PRODUCTS.forEach((p,i)=>{let hits=0;p.kw.forEach(k=>{if(t.includes(k))hits++;});
+    // specificity: construction beats generic vehicle
+    if(i===5&&/(construction|excavator|digger|bulldozer|crane)/.test(t))hits=0; // don't let plain "vehicle" steal construction posts
+    if(hits>bestHits){bestHits=hits;best=i;}});
+  return best;
+}
+
+function renderAll(){
+  renderStats();renderTrend();renderOverviewLists();
+  renderDateChips();renderDateOut();
+  renderCreators();renderCmpSelectors();renderProducts();
+  renderTop();renderAllFilters();renderAllTable();renderColPop();
+  $('#ctCreators').textContent=S.creators.length;$('#ctAll').textContent=S.rows.length;$('#ctProducts').textContent=S.products.filter(p=>p.asin).length;
+  updateBasket();applyFmtLabel();
+}
+
+const TITLES={overview:['Overview','Headline numbers and trend across your file'],dates:['Dates','Pull video links grouped by posting day'],creators:['Creators','Every creator grouped — expand a row to see their videos'],products:['Products','Performance by product — videos matched to your 11 SKUs'],top:['Top Performers','Your highest-converting videos and insight panels'],all:['All Videos','Full table with filters, presets, and export']};
+$$('#nav a').forEach(a=>a.onclick=()=>{
+  $$('#nav a').forEach(x=>x.classList.remove('on'));a.classList.add('on');
+  const n=a.dataset.nav;$$('.view').forEach(v=>v.classList.remove('on'));$('#v-'+n).classList.add('on');
+  $('#pageTitle').textContent=TITLES[n][0];$('#pageDesc').textContent=TITLES[n][1];
+  $('#sidebar').classList.remove('open');window.scrollTo(0,0);
+});
+$('#menuBtn').onclick=()=>$('#sidebar').classList.toggle('open');
+
+function renderStats(){
+  const tG=S.rows.reduce((a,r)=>a+r.gmv,0),tS=S.rows.reduce((a,r)=>a+r.sold,0);
+  const cr=S.rows.filter(r=>r.impressions>0),aC=cr.length?cr.reduce((a,r)=>a+r.ctr,0)/cr.length:0;
+  const rg=S.dates.length?`${fmtDate(S.dates[0].date)}<br>→ ${fmtDate(S.dates.at(-1).date)}`:'—';
+  const c=[['Total GMV',money(tG),'Gross merchandise value across every video in the file.'],['Videos',num(S.rows.length),'Total number of affiliate videos in the file.'],['Creators',num(S.creators.length),'Unique creator usernames — duplicate posters are grouped into one.'],['Items sold',num(tS),'Total affiliate items sold across all videos.'],['Avg CTR',aC.toFixed(2)+'%','Average click-through rate across videos that recorded impressions.'],['Date range',`<span class="small">${rg}</span>`,'Earliest to latest posting date found in the file.']];
+  $('#statsRow').innerHTML=c.map(x=>`<div class="stat" title="${x[2]}"><div class="k"><span class="dot"></span>${x[0]}</div><div class="v">${x[1]}</div></div>`).join('');
+}
+function renderTrend(){
+  const labels=S.dates.map(d=>fmtDate(d.date)),bd={};S.dates.forEach(d=>bd[d.date]={gmv:0,count:0,impressions:0,sold:0});
+  S.rows.forEach(r=>{if(bd[r.dateStr]){bd[r.dateStr].gmv+=r.gmv;bd[r.dateStr].count++;bd[r.dateStr].impressions+=r.impressions;bd[r.dateStr].sold+=r.sold;}});
+  const data=S.dates.map(d=>bd[d.date][S.trendMetric]);
+  const cs=getComputedStyle(document.body),ac=cs.getPropertyValue('--accent').trim(),gl=cs.getPropertyValue('--border').trim(),mt=cs.getPropertyValue('--ink2').trim();
+  if(S.chart)S.chart.destroy();
+  S.chart=new Chart($('#trendChart'),{type:'line',data:{labels,datasets:[{data,borderColor:ac,backgroundColor:ac+'1f',fill:true,tension:.32,pointRadius:2,pointHoverRadius:5,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>S.trendMetric==='gmv'?money(c.parsed.y):num(c.parsed.y)+' '+S.trendMetric}}},scales:{x:{grid:{color:gl},ticks:{color:mt,maxTicksLimit:12,font:{size:10}}},y:{grid:{color:gl},ticks:{color:mt,font:{size:10}}}}}});
+}
+function renderOverviewLists(){
+  const top=S.creators.slice().sort((a,b)=>b.gmv-a.gmv).slice(0,6);
+  $('#ovTopCreators').innerHTML=top.map((c,i)=>`<div class="lrow"><span class="rank ${i<3?'r'+(i+1):''}">${i+1}</span><span class="u" style="flex:1;width:auto">@${esc(c.username)}</span><span class="mut" style="font-size:11.5px;font-weight:700">${c.videos} vids</span><span class="g">${money(c.gmv)}</span></div>`).join('')||'<div class="empty">No data</div>';
+  const rec=S.dates.slice(-6).reverse();
+  $('#ovRecentDates').innerHTML=rec.map(d=>`<div class="lrow"><span class="u" style="flex:1;width:auto;color:var(--ink)">${fmtDate(d.date)}</span><span class="g">${d.count} videos</span></div>`).join('')||'<div class="empty">No data</div>';
+}
+
+let selDates=new Set();
+function renderDateChips(){
+  const groups={};S.dates.forEach(d=>{const ym=d.date.slice(0,7);(groups[ym]=groups[ym]||[]).push(d);});
+  const keys=Object.keys(groups).sort().reverse();
+  if(!S.monthsInit){S.monthsInit=true;if(keys[0])S.openMonths.add(keys[0]);}
+  $('#dateChips').innerHTML=keys.map(ym=>{
+    const y=ym.slice(0,4),mo=parseInt(ym.slice(5,7));const ds=groups[ym].slice().sort((a,b)=>b.date<a.date?-1:1);
+    const vids=ds.reduce((a,x)=>a+x.count,0);const open=S.openMonths.has(ym);
+    const selN=ds.filter(d=>selDates.has(d.date)).length;
+    const chips=ds.map(d=>`<div class="dc day ${selDates.has(d.date)?'sel':''}" data-d="${d.date}" title="${fmtDate(d.date)}"><span class="dnum">${parseInt(d.date.slice(8,10))}</span> <span class="n">${d.count}</span></div>`).join('');
+    return `<div class="datemonth ${open?'open':''}">
+      <div class="dm-head" data-mon="${ym}"><span class="dm-caret">▸</span> ${MF[mo-1]} ${y} <span class="dm-n">${ds.length} day${ds.length!==1?'s':''} · ${vids} video${vids!==1?'s':''}${selN?` · <b style="color:var(--accent-ink)">${selN} selected</b>`:''}</span>
+        <span class="dm-sel" data-monsel="${ym}" title="Select/clear every day in this month.">${selN===ds.length?'Clear month':'Select month'}</span></div>
+      <div class="dm-body">${chips}</div></div>`;
+  }).join('')||'<div class="empty">No dates in file.</div>';
+  $$('#dateChips .dm-head').forEach(h=>h.onclick=e=>{if(e.target.dataset.monsel!==undefined)return;const m=h.dataset.mon;S.openMonths.has(m)?S.openMonths.delete(m):S.openMonths.add(m);renderDateChips();});
+  $$('#dateChips .dm-sel').forEach(s=>s.onclick=e=>{e.stopPropagation();const ym=s.dataset.monsel;const ds=groups[ym];const all=ds.every(d=>selDates.has(d.date));ds.forEach(d=>all?selDates.delete(d.date):selDates.add(d.date));renderDateChips();renderDateOut();});
+  $$('#dateChips .dc').forEach(c=>c.onclick=()=>{const d=c.dataset.d;selDates.has(d)?selDates.delete(d):selDates.add(d);renderDateChips();renderDateOut();});
+}
+$('#selAll').onclick=()=>{S.dates.forEach(d=>selDates.add(d.date));renderDateChips();renderDateOut();};
+$('#selNone').onclick=()=>{selDates.clear();renderDateChips();renderDateOut();};
+$('#selRecent').onclick=()=>{selDates.clear();S.dates.slice(-7).forEach(d=>selDates.add(d.date));renderDateChips();renderDateOut();};
+$('#expandAllM').onclick=()=>{S.dates.forEach(d=>S.openMonths.add(d.date.slice(0,7)));renderDateChips();};
+$('#collapseAllM').onclick=()=>{S.openMonths.clear();renderDateChips();};
+$$('.qr').forEach(b=>b.onclick=()=>{
+  if(!S.dates.length)return;selDates.clear();
+  const maxIso=S.dates.at(-1).date;
+  if(b.dataset.qr==='month'){const ym=maxIso.slice(0,7);S.dates.filter(d=>d.date.slice(0,7)===ym).forEach(d=>selDates.add(d.date));S.openMonths.add(ym);}
+  else{const n=parseInt(b.dataset.qr);const max=new Date(maxIso+'T00:00:00Z');const cut=new Date(max);cut.setUTCDate(cut.getUTCDate()-(n-1));const ci=cut.toISOString().slice(0,10);S.dates.filter(d=>d.date>=ci&&d.date<=maxIso).forEach(d=>{selDates.add(d.date);S.openMonths.add(d.date.slice(0,7));});}
+  renderDateChips();renderDateOut();
+});
+function renderDateOut(){
+  const out=$('#dateOut');
+  if(!selDates.size){out.innerHTML='<div class="card pad" style="margin-top:18px"><div class="empty"><span class="em">📆</span>Select one or more dates above to see their video links.</div></div>';return;}
+  const dates=[...selDates].sort().reverse();
+  const totV=dates.reduce((a,d)=>a+S.rows.filter(r=>r.dateStr===d).length,0);
+  let h=`<div class="sel-bar"><b>${dates.length} date${dates.length!==1?'s':''} · ${totV} video${totV!==1?'s':''} selected</b><div class="spacer"></div><button class="btn ghost sm" id="copyAllGrouped" title="Copy all selected dates with a date heading above each day's links.">📋 Grouped</button><button class="btn ghost sm" id="copyAllFlat" title="Copy just the links from all selected dates as one plain list.">📋 Links only</button><button class="btn ghost sm" id="basketAll" title="Add every video from the selected dates to your shortlist.">⭐ Shortlist all</button><button class="btn ghost sm" id="clearSel" title="Clear the selection.">✕ Clear</button></div>`;
+  dates.forEach(d=>{const rows=S.rows.filter(r=>r.dateStr===d);h+=`<div class="dgroup"><div class="gh"><span class="dt">${fmtDate(d)}</span><span class="cn">${rows.length} video${rows.length!==1?'s':''}</span><div class="spacer"></div><button class="btn tiny ghost" data-cd="${d}" title="Copy this day's links only.">📋 Links</button><button class="btn tiny ghost" data-cdl="${d}" title="Copy this day's links with each creator @username.">📋 + creator</button><button class="btn tiny amber" data-bd="${d}" title="Add this day's videos to your shortlist.">⭐ Shortlist</button></div>`;rows.forEach(r=>{h+=`<div class="lrow"><input type="checkbox" class="cbx bcb" data-link="${esc(r.link)}" ${S.basket.has(r.link)?'checked':''}><span class="u">@${esc(r.username)}</span><span class="lk" title="${esc(r.link)}">${esc(r.link)}</span><span class="g">${r.gmv>0?money(r.gmv):'—'}</span><span class="acts"><a class="btn tiny ghost" href="${esc(r.link)}" target="_blank" rel="noopener">▶</a><button class="btn tiny ghost" data-peek="${esc(r.link)}">👁</button></span></div>`;});h+='</div>';});
+  out.innerHTML=h;
+  $$('[data-cd]').forEach(b=>b.onclick=()=>{const rows=S.rows.filter(r=>r.dateStr===b.dataset.cd);copy(fmtDate(b.dataset.cd)+'\n'+rows.map(r=>r.link).join('\n'));});
+  $$('[data-cdl]').forEach(b=>b.onclick=()=>copy(dateText(b.dataset.cdl,true)));
+  $$('[data-bd]').forEach(b=>b.onclick=()=>{S.rows.filter(r=>r.dateStr===b.dataset.bd).forEach(addB);updateBasket();renderDateOut();toast('Added to shortlist');});
+  $('#copyAllGrouped').onclick=()=>copy(dates.map(d=>dateText(d,false)).join('\n\n'));
+  $('#copyAllFlat').onclick=()=>{const a=[];dates.forEach(d=>S.rows.filter(r=>r.dateStr===d).forEach(r=>a.push(r.link)));copy(a.join('\n'));};
+  $('#basketAll').onclick=()=>{dates.forEach(d=>S.rows.filter(r=>r.dateStr===d).forEach(addB));updateBasket();renderDateOut();toast('Added to shortlist');};
+  $('#clearSel').onclick=()=>{selDates.clear();renderDateChips();renderDateOut();};
+  bindCommon();
+}
+function dateText(d,wc){const rows=S.rows.filter(r=>r.dateStr===d);return fmtDate(d)+'\n'+rows.map(r=>wc?`@${r.username}\n${r.link}`:r.link).join('\n');}
+
+$('#creatorSearch').oninput=renderCreators;
+$('#creatorSort').onchange=()=>{S.creatorSortKey=$('#creatorSort').value;renderCreators();};
+$('#creatorPostsFilter').onchange=()=>{S.creatorPostsFilter=$('#creatorPostsFilter').value;renderCreators();};
+$('#creatorOutreachFilter').onchange=()=>{S.creatorOutreachFilter=$('#creatorOutreachFilter').value;renderCreators();};
+// outreach log: copy contacts (filtered), export & import (merge)
+function currentCreatorList(){
+  const q=$('#creatorSearch').value.toLowerCase(),pf=S.creatorPostsFilter,of=S.creatorOutreachFilter,today=todayISO();
+  let list=S.creators.filter(c=>c.username.toLowerCase().includes(q));
+  if(pf==='one')list=list.filter(c=>c.videos===1);else if(pf==='ret')list=list.filter(c=>c.videos>1);
+  if(of)list=list.filter(c=>{const e=crmGet(c.username);if(of==='not_messaged')return !e.messagedDate;if(of==='awaiting')return e.messagedDate&&!e.reposted;if(of==='responded')return e.reposted;if(of==='followup')return e.followUpDate&&e.followUpDate<=today&&!e.reposted;if(of==='__set')return e.status||e.messagedDate||e.reposted||e.followUpDate;return e.status===of;});
+  return list;
+}
+$('#copyContacts').onclick=()=>{const list=currentCreatorList();if(!list.length){toast('No creators in current filter');return;}copy(list.map(c=>`@${c.username}\nhttps://www.tiktok.com/@${c.username}`).join('\n\n'));};
+$('#exportLog').onclick=()=>{
+  const payload={schema:'lucas-outreach-log',version:1,tool:'TikTok Affiliate Video Analyzer',exportedAt:new Date().toISOString(),count:Object.keys(S.crm).length,creators:S.crm};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='lucas-outreach-log-'+todayISO()+'.json';a.click();URL.revokeObjectURL(a.href);toast('Exported '+payload.count+' log entries');
+};
+$('#importLog').onclick=()=>$('#importLogFile').click();
+$('#importLogFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{
+  try{const data=JSON.parse(ev.target.result);const incoming=data&&data.creators?data.creators:(data&&!data.schema?data:null);
+    if(!incoming||typeof incoming!=='object'){toast('⚠ Not a valid log file');return;}
+    let nw=0,up=0,un=0;
+    Object.entries(incoming).forEach(([u,e])=>{if(!e||typeof e!=='object')return;const cur=S.crm[u];
+      if(!cur){S.crm[u]={status:'',notes:'',messagedDate:'',reposted:false,followUpDate:'',lastEdited:'',...e};nw++;}
+      else{const a=cur.lastEdited||'',b=e.lastEdited||'';if(b>a){S.crm[u]={...cur,...e};up++;}else un++;}});
+    localStorage.setItem('ava_crm',JSON.stringify(S.crm));renderCreators();
+    toast(`Imported — ${nw} new, ${up} updated, ${un} unchanged`);
+  }catch(err){toast('⚠ Could not read file: '+err.message);}
+  $('#importLogFile').value='';
+};r.readAsText(f);};
+function todayISO(){return new Date().toISOString().slice(0,10);}
+function crmGet(u){return Object.assign({status:'',notes:'',messagedDate:'',reposted:false,followUpDate:'',lastEdited:''},S.crm[u]||{});}
+function crmEmpty(e){return !e.status&&!e.notes&&!e.messagedDate&&!e.reposted&&!e.followUpDate;}
+function crmSet(u,patch){const next={...crmGet(u),...patch,lastEdited:new Date().toISOString()};if(crmEmpty(next))delete S.crm[u];else S.crm[u]=next;localStorage.setItem('ava_crm',JSON.stringify(S.crm));}
+function renderCreators(){
+  const q=$('#creatorSearch').value.toLowerCase(),k=S.creatorSortKey;
+  const pf=S.creatorPostsFilter,of=S.creatorOutreachFilter,today=todayISO();
+  let list=S.creators.filter(c=>c.username.toLowerCase().includes(q));
+  if(pf==='one')list=list.filter(c=>c.videos===1);
+  else if(pf==='ret')list=list.filter(c=>c.videos>1);
+  if(of){list=list.filter(c=>{const e=crmGet(c.username);
+    if(of==='not_messaged')return !e.messagedDate;
+    if(of==='awaiting')return e.messagedDate&&!e.reposted;
+    if(of==='responded')return e.reposted;
+    if(of==='followup')return e.followUpDate&&e.followUpDate<=today&&!e.reposted;
+    if(of==='__set')return e.status||e.messagedDate||e.reposted||e.followUpDate;
+    return e.status===of;});}
+  list.sort((a,b)=>k==='username'?a.username.localeCompare(b.username):(b[k]-a[k]));
+  $('#creatorSummary').textContent=`${list.length} creators · ${list.reduce((a,c)=>a+c.videos,0)} videos`;
+  $('#creatorList').innerHTML=list.map(c=>{
+    const open=S.openCreators.has(c.username);
+    const allIn=c.vids.length>0&&c.vids.every(v=>S.basket.has(v.link));
+    const starTitle=allIn?('All '+c.videos+" of this creator's videos are in your shortlist — click the star to remove them all"):('Click the star to add all '+c.videos+" of this creator's videos to your shortlist");
+    const vids=c.vids.slice().sort((x,y)=>(y.dateStr>x.dateStr?1:(y.dateStr<x.dateStr?-1:0)));
+    const crm=crmGet(c.username);const today=todayISO();
+    let pills=crm.status?`<span class="status-pill s-${STATUS_COLOR[crm.status]}" title="Outreach status — set it below.">${crm.status}</span>`:'';
+    if(crm.messagedDate&&!crm.reposted)pills+=`<span class="status-pill s-indigo" title="You marked this creator messaged on ${fmtDate(crm.messagedDate)}, awaiting a new post.">✉ ${fmtDate(crm.messagedDate)}</span>`;
+    if(crm.reposted)pills+=`<span class="status-pill s-accent" title="This creator posted again after you reached out.">↺ Re-posted</span>`;
+    if(crm.followUpDate&&crm.followUpDate<=today&&!crm.reposted)pills+=`<span class="status-pill s-danger" title="Follow-up was due ${fmtDate(crm.followUpDate)}.">⏰ Follow up</span>`;
+    const statusOpts=['<option value="">— set status —</option>'].concat(STATUSES.map(s=>`<option value="${s}" ${crm.status===s?'selected':''}>${s}</option>`)).join('');
+    return `<div class="creator ${open?'open':''}">
+      <div class="crow" data-toggle="${esc(c.username)}" title="Click to expand: see videos, set outreach status, and add notes.">
+        <div class="avatar">${initial(c.username)}</div>
+        <div class="who"><a href="https://www.tiktok.com/@${esc(c.username)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">@${esc(c.username)}</a>
+          <div class="sub" title="${c.returning?'Returning — this creator has posted more than one video in the file.':'New — this creator posted only a single video in the file.'}">${c.returning?'<span class="tag ret">Returning</span>':'<span class="tag new">New</span>'} ${pills}</div></div>
+        <div class="vcount" title="Total number of videos this creator posted (all their rows grouped together)."><span class="n">${c.videos}</span><span class="l">video${c.videos!==1?'s':''}</span></div>
+        <div class="cmetrics">
+          <div class="cmetric"><div class="l">GMV</div><div class="v">${c.gmv>0?money(c.gmv):'—'}</div></div>
+          <div class="cmetric"><div class="l">Sold</div><div class="v">${c.sold||'—'}</div></div>
+          <div class="cmetric"><div class="l">Avg CTR</div><div class="v">${c.avgCtr.toFixed(2)}%</div></div>
+          <div class="cmetric"><div class="l">Impr.</div><div class="v">${num(c.impressions)}</div></div>
+          <div class="cmetric"><div class="l">Likes</div><div class="v">${num(c.likes)}</div></div>
+        </div>
+        <div class="cacts"><button class="star-btn ${allIn?'on':''}" data-ball="${esc(c.username)}" title="${starTitle}">★</button><span class="chev">▼</span></div>
+      </div>
+      <div class="drill">
+        <div class="crm-edit">
+          <button class="btn sm ${crm.messagedDate?'':'ghost'}" data-crm-msg="${esc(c.username)}" title="Log that you've messaged this creator (e.g. asking for another video). Stamps today's date; click again to undo.">${crm.messagedDate?'✅ Messaged · '+fmtDate(crm.messagedDate):'✉ Mark messaged'}</button>
+          <button class="btn sm ${crm.reposted?'':'ghost'}" data-crm-rep="${esc(c.username)}" title="Mark that this creator posted a new video after your outreach.">${crm.reposted?'✅ Re-posted':'↺ Mark re-posted'}</button>
+          <label title="Optional reminder date. When it passes (and they haven't re-posted), a 'Follow up' flag shows on the row and in the Follow-up-due filter.">Follow-up <input type="date" data-crm-fu="${esc(c.username)}" value="${esc(crm.followUpDate||'')}"></label>
+        </div>
+        <div class="crm-edit" style="padding-top:0">
+          <label title="Track where this creator is in your outreach pipeline. Saved on this device.">Status <select data-crm-status="${esc(c.username)}">${statusOpts}</select></label>
+          <label style="flex:1" title="Free notes — e.g. discount code, what you offered, anything to remember.">Notes <input type="text" data-crm-notes="${esc(c.username)}" value="${esc(crm.notes||'')}" placeholder="e.g. sample sent · code LUCAS10 · DM'd on IG too"></label>
+        </div>
+        ${vids.map(r=>`<div class="dvid">
+        <input type="checkbox" class="cbx bcb" data-link="${esc(r.link)}" ${S.basket.has(r.link)?'checked':''}>
+        <span class="dt">${fmtDate(r.dateStr)}</span>
+        <span class="nm" title="${esc(r.name)}">${esc(r.name)||'<span class="mut3">— no caption —</span>'}</span>
+        <span class="g">${r.gmv>0?money(r.gmv):'—'}</span>
+        <span class="acts"><a class="btn tiny ghost" href="${esc(r.link)}" target="_blank" rel="noopener">▶ View</a><button class="btn tiny ghost" data-peek="${esc(r.link)}">👁</button></span>
+      </div>`).join('')}</div>
+    </div>`;
+  }).join('')||'<div class="card pad"><div class="empty"><span class="em">👤</span>No creators match.</div></div>';
+  $$('[data-toggle]').forEach(el=>el.onclick=()=>{const u=el.dataset.toggle;S.openCreators.has(u)?S.openCreators.delete(u):S.openCreators.add(u);renderCreators();});
+  $$('[data-ball]').forEach(b=>b.onclick=e=>{e.stopPropagation();const c=S.creators.find(x=>x.username===b.dataset.ball);const allIn=c.vids.length>0&&c.vids.every(v=>S.basket.has(v.link));if(allIn){c.vids.forEach(v=>S.basket.delete(v.link));toast(`Removed @${c.username}'s ${c.videos} videos`);}else{c.vids.forEach(addB);toast(`Added @${c.username}'s ${c.videos} videos`);}updateBasket();renderCreators();});
+  $$('[data-crm-status]').forEach(s=>{s.onclick=e=>e.stopPropagation();s.onchange=()=>{crmSet(s.dataset.crmStatus,{status:s.value});renderCreators();};});
+  $$('[data-crm-notes]').forEach(i=>{i.onclick=e=>e.stopPropagation();i.onchange=()=>crmSet(i.dataset.crmNotes,{notes:i.value});});
+  $$('[data-crm-msg]').forEach(b=>b.onclick=e=>{e.stopPropagation();const u=b.dataset.crmMsg;crmSet(u,{messagedDate:crmGet(u).messagedDate?'':todayISO()});renderCreators();});
+  $$('[data-crm-rep]').forEach(b=>b.onclick=e=>{e.stopPropagation();const u=b.dataset.crmRep;crmSet(u,{reposted:!crmGet(u).reposted});renderCreators();});
+  $$('[data-crm-fu]').forEach(i=>{i.onclick=e=>e.stopPropagation();i.onchange=()=>{crmSet(i.dataset.crmFu,{followUpDate:i.value});renderCreators();};});
+  bindCommon();
+}
+function renderCmpSelectors(){const o='<option value="">— select —</option>'+S.creators.slice().sort((a,b)=>a.username.localeCompare(b.username)).map(c=>`<option value="${esc(c.username)}">@${esc(c.username)} (${c.videos})</option>`).join('');$('#cmpA').innerHTML=o;$('#cmpB').innerHTML=o;$('#cmpA').onchange=renderCmp;$('#cmpB').onchange=renderCmp;}
+function renderCmp(){const a=S.creators.find(c=>c.username===$('#cmpA').value),b=S.creators.find(c=>c.username===$('#cmpB').value),out=$('#cmpOut');if(!a||!b){out.innerHTML='';return;}
+  const M=[['Videos','videos',v=>v,1],['Total GMV','gmv',money,1],['Items sold','sold',v=>v,1],['Avg CTR','avgCtr',v=>v.toFixed(2)+'%',1],['Impressions','impressions',num,1],['Likes','likes',num,1],['Comments','comments',num,1],['Cost (comm+fee)','cost',money,-1],['GMV per $ cost','roi',v=>v===Infinity?'∞':v.toFixed(1)+'x',1],['Refunded items','refunded',v=>v,-1]];
+  const card=(c,o)=>`<div class="cc"><h4><a class="uname" href="https://www.tiktok.com/@${esc(c.username)}" target="_blank" rel="noopener">@${esc(c.username)}</a></h4>`+M.map(m=>{const v=c[m[1]],ov=o[m[1]],win=(m[3]>0?v>ov:v<ov)&&v!==ov;return `<div class="ln"><span>${m[0]}</span><b class="${win?'win':''}">${m[2](v)}</b></div>`;}).join('')+`</div>`;
+  out.innerHTML=`<div class="cmp">${card(a,b)}${card(b,a)}</div>`;
+}
+
+/* PRODUCTS — per-SKU breakdown */
+$('#productSort').onchange=()=>{S.productSortKey=$('#productSort').value;renderProducts();};
+function renderProducts(){
+  const k=S.productSortKey;
+  const list=S.products.slice().sort((a,b)=>b[k]-a[k]);
+  const matched=S.products.filter(p=>p.asin&&p.videos>0).length, unm=S.products.find(p=>!p.asin);
+  $('#productSummary').textContent=`${matched}/11 products active${unm?` · ${unm.videos} unmatched`:''}`;
+  $('#productList').innerHTML=list.map(p=>{
+    const open=S.openProducts.has(p.name);
+    const vids=p.vids.slice().sort((x,y)=>y.gmv-x.gmv);
+    const isUn=!p.asin;
+    return `<div class="creator ${open?'open':''}">
+      <div class="crow" data-prod="${esc(p.name)}" title="Click to see the videos matched to this product.">
+        <div class="avatar" style="${isUn?'background:linear-gradient(140deg,#8a91a0,#5f6779)':''}">${isUn?'?':'🧩'}</div>
+        <div class="who" style="width:230px"><a style="cursor:pointer">${esc(p.name)}</a>
+          <div class="sub mut3" style="font-size:11px;font-weight:700;margin-top:3px">${isUn?'No product keyword found':p.asin+' · '+p.nCreators+' creators'}</div></div>
+        <div class="vcount" title="Videos matched to this product."><span class="n">${p.videos}</span><span class="l">video${p.videos!==1?'s':''}</span></div>
+        <div class="cmetrics">
+          <div class="cmetric"><div class="l">GMV</div><div class="v">${p.gmv>0?money(p.gmv):'—'}</div></div>
+          <div class="cmetric"><div class="l">Sold</div><div class="v">${p.sold||'—'}</div></div>
+          <div class="cmetric"><div class="l">Avg CTR</div><div class="v">${p.avgCtr.toFixed(2)}%</div></div>
+          <div class="cmetric"><div class="l">Impr.</div><div class="v">${num(p.impressions)}</div></div>
+          <div class="cmetric"><div class="l">Likes</div><div class="v">${num(p.likes)}</div></div>
+        </div>
+        <div class="cacts"><span class="chev">▼</span></div>
+      </div>
+      <div class="drill">${vids.length?vids.map(r=>`<div class="dvid">
+        <input type="checkbox" class="cbx bcb" data-link="${esc(r.link)}" ${S.basket.has(r.link)?'checked':''}>
+        <span class="dt">${fmtDate(r.dateStr)}</span>
+        <span class="nm" title="${esc(r.name)}"><span class="uname">@${esc(r.username)}</span> · ${esc(r.name).slice(0,80)||'<span class="mut3">— no caption —</span>'}</span>
+        <span class="g">${r.gmv>0?money(r.gmv):'—'}</span>
+        <span class="acts"><a class="btn tiny ghost" href="${esc(r.link)}" target="_blank" rel="noopener">▶ View</a><button class="btn tiny ghost" data-peek="${esc(r.link)}">👁</button></span>
+      </div>`).join(''):'<div class="empty" style="padding:20px">No videos matched.</div>'}</div>
+    </div>`;
+  }).join('')||'<div class="card pad"><div class="empty"><span class="em">🧩</span>No products to show.</div></div>';
+  $$('[data-prod]').forEach(el=>el.onclick=()=>{const n=el.dataset.prod;S.openProducts.has(n)?S.openProducts.delete(n):S.openProducts.add(n);renderProducts();});
+  bindCommon();
+}
+
+$$('#rankSeg button').forEach(b=>b.onclick=()=>{$$('#rankSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');S.rankBy=b.dataset.rank;renderTop();});
+$$('#metricSeg button').forEach(b=>b.onclick=()=>{$$('#metricSeg button').forEach(x=>x.classList.remove('on'));b.classList.add('on');S.trendMetric=b.dataset.metric;renderTrend();});
+function renderTop(){
+  const k=S.rankBy,sorted=S.rows.slice().sort((a,b)=>b[k]-a[k]).slice(0,40);
+  $('#topBody').innerHTML=sorted.map((r,i)=>`<tr><td><span class="rank ${i<3?'r'+(i+1):''}">${i+1}</span></td><td><a class="uname" href="https://www.tiktok.com/@${esc(r.username)}" target="_blank" rel="noopener">@${esc(r.username)}</a></td><td>${fmtDate(r.dateStr)}</td><td class="num">${r.gmv>0?money(r.gmv):'—'}</td><td class="num">${r.sold||'—'}</td><td class="num">${r.ctr.toFixed(2)}%</td><td class="num">${r.gpm.toFixed(1)}</td><td class="num">${num(r.impressions)}</td><td class="num">${num(r.likes)}</td><td><a class="btn tiny ghost" href="${esc(r.link)}" target="_blank" rel="noopener">▶</a> <button class="btn tiny ghost" data-peek="${esc(r.link)}">👁</button></td><td><input type="checkbox" class="cbx bcb" data-link="${esc(r.link)}" ${S.basket.has(r.link)?'checked':''}></td></tr>`).join('');
+  const im=S.rows.map(r=>r.impressions).sort((a,b)=>a-b),med=im[Math.floor(im.length/2)]||0;
+  const gems=S.rows.filter(r=>r.impressions>0&&r.impressions<=med&&(r.ctr>=3||r.gpm>=30)).sort((a,b)=>b.gpm-a.gpm).slice(0,10);
+  $('#gemsList').innerHTML=mini(gems,r=>`CTR ${r.ctr.toFixed(1)}% · GPM ${r.gpm.toFixed(0)} · ${num(r.impressions)} impr`)||emptyEm('🔍','None found.');
+  const fix=S.rows.filter(r=>r.gmv===0&&(r.likes+r.comments)>=5).sort((a,b)=>(b.likes+b.comments)-(a.likes+a.comments)).slice(0,10);
+  $('#fixList').innerHTML=mini(fix,r=>`${num(r.likes)} likes · ${num(r.comments)} comments · $0`)||emptyEm('✅','None found.');
+  const ref=S.rows.filter(r=>r.refunded>0||r.refundedGmv>0).sort((a,b)=>b.refundedGmv-a.refundedGmv).slice(0,10);
+  $('#refundList').innerHTML=mini(ref,r=>`${r.refunded} refunded · ${money(r.refundedGmv)}`)||emptyEm('✅','No refunds — clean!');
+  const eff=S.creators.filter(c=>c.cost>0&&c.gmv>0).sort((a,b)=>b.roi-a.roi).slice(0,10);
+  $('#effList').innerHTML=eff.map(c=>`<div class="lrow"><span class="u">@${esc(c.username)}</span><span class="lk">${money(c.gmv)} / ${money(c.cost)}</span><span class="g">${c.roi===Infinity?'∞':c.roi.toFixed(1)+'x'}</span></div>`).join('')||emptyEm('💸','No paid creators with sales.');
+  bindCommon();
+}
+function emptyEm(e,t){return `<div class="empty"><span class="em">${e}</span>${t}</div>`;}
+function mini(rows,sub){return rows.map(r=>`<div class="lrow"><input type="checkbox" class="cbx bcb" data-link="${esc(r.link)}" ${S.basket.has(r.link)?'checked':''}><span class="u">@${esc(r.username)}</span><span class="lk">${sub(r)}</span><span class="acts"><a class="btn tiny ghost" href="${esc(r.link)}" target="_blank" rel="noopener">▶</a><button class="btn tiny ghost" data-peek="${esc(r.link)}">👁</button></span></div>`).join('');}
+$('#addTop10').onclick=()=>{S.rows.slice().sort((a,b)=>b[S.rankBy]-a[S.rankBy]).slice(0,10).forEach(addB);updateBasket();renderTop();toast('Top 10 added');};
+
+function renderAllFilters(){$('#fCreator').innerHTML='<option value="">All</option>'+S.creators.slice().sort((a,b)=>a.username.localeCompare(b.username)).map(c=>`<option value="${esc(c.username)}">@${esc(c.username)}</option>`).join('');if(S.dates.length){$('#fFrom').value=S.dates[0].date;$('#fTo').value=S.dates.at(-1).date;}}
+function getFiltered(){const q=$('#fSearch').value.toLowerCase(),cu=$('#fCreator').value,from=$('#fFrom').value,to=$('#fTo').value,mG=parseFloat($('#fGmv').value)||0,mC=parseFloat($('#fCtr').value)||0,mS=parseFloat($('#fSold').value)||0;return S.rows.filter(r=>{if(S.customPred&&!S.customPred(r))return false;if(q&&!(r.name.toLowerCase().includes(q)||r.username.toLowerCase().includes(q)))return false;if(cu&&r.username!==cu)return false;if(from&&r.dateStr<from)return false;if(to&&r.dateStr>to)return false;if(r.gmv<mG||r.ctr<mC||r.sold<mS)return false;return true;});}
+function renderAllTable(){
+  const vis=COLS.filter(c=>!S.hiddenCols.has(c.key));
+  $('#allHead').innerHTML=vis.map(c=>{const ar=S.allSort.key===c.key?(S.allSort.dir<0?'▼':'▲'):'';const nc=['gmv','sold','svGmv','aov','commission','flatFee','orders','impressions','ctr','gpm','refunded','refundedGmv','comments','likes'].includes(c.key)?'num':'';return `<th data-as="${c.key}" class="${nc}">${c.label} <span class="ar">${ar}</span></th>`;}).join('')+'<th>Actions</th><th>🛒</th>';
+  $$('#allHead th[data-as]').forEach(th=>th.onclick=()=>{const k=th.dataset.as;if(S.allSort.key===k)S.allSort.dir*=-1;else{S.allSort.key=k;S.allSort.dir=['username','dateStr','name'].includes(k)?1:-1;}renderAllTable();});
+  let rows=getFiltered();const k=S.allSort.key,dir=S.allSort.dir;
+  rows.sort((a,b)=>{let x=a[k],y=b[k];return typeof x==='string'?x.localeCompare(y)*dir:(x-y)*dir;});
+  $('#resultCount').textContent=`${rows.length} videos · ${money(rows.reduce((a,r)=>a+r.gmv,0))} GMV`;
+  $('#allBody').innerHTML=rows.map(r=>{let t=vis.map(c=>cell(r,c)).join('');t+=`<td><a class="btn tiny ghost" href="${esc(r.link)}" target="_blank" rel="noopener">▶ View</a> <button class="btn tiny ghost" data-peek="${esc(r.link)}">👁</button></td><td><input type="checkbox" class="cbx bcb" data-link="${esc(r.link)}" ${S.basket.has(r.link)?'checked':''}></td>`;return `<tr>${t}</tr>`;}).join('')||`<tr><td colspan="${vis.length+2}"><div class="empty"><span class="em">📋</span>No videos match your filters.</div></td></tr>`;
+  bindCommon();
+}
+function cell(r,c){const v=r[c.key];switch(c.type){case 'str':return `<td><a class="uname" href="https://www.tiktok.com/@${esc(v)}" target="_blank" rel="noopener">@${esc(v)}</a></td>`;case 'date':return `<td>${fmtDate(v)}</td>`;case 'name':return `<td class="namecell" title="${esc(v)}">${esc(v).slice(0,110)||'<span class="mut3">—</span>'}</td>`;case 'cur':return `<td class="num">${v>0?money(v):'—'}</td>`;case 'int':return `<td class="num">${v?num(v):'—'}</td>`;case 'pct':return `<td class="num">${v.toFixed(2)}%</td>`;case 'num':return `<td class="num">${v?v.toFixed(1):'—'}</td>`;}return `<td>${esc(v)}</td>`;}
+['fSearch','fGmv','fCtr','fSold'].forEach(id=>$('#'+id).oninput=()=>{S.customPred=null;renderAllTable();});
+['fCreator','fFrom','fTo'].forEach(id=>$('#'+id).onchange=()=>{S.customPred=null;renderAllTable();});
+$('#clearFilters').onclick=()=>{S.customPred=null;$('#fSearch').value='';$('#fCreator').value='';$('#fGmv').value='';$('#fCtr').value='';$('#fSold').value='';if(S.dates.length){$('#fFrom').value=S.dates[0].date;$('#fTo').value=S.dates.at(-1).date;}renderAllTable();};
+$$('.preset').forEach(b=>b.onclick=()=>{$('#clearFilters').click();const p=b.dataset.preset;if(p==='spark'){$('#fCtr').value='2';$('#fGmv').value='1';S.allSort={key:'ctr',dir:-1};}else if(p==='fix'){S.customPred=r=>r.gmv===0&&(r.likes+r.comments)>=5;S.allSort={key:'likes',dir:-1};}else if(p==='refund'){S.customPred=r=>r.refunded>0||r.refundedGmv>0;S.allSort={key:'refundedGmv',dir:-1};}else if(p==='sellers'){$('#fGmv').value='0.01';S.allSort={key:'gmv',dir:-1};}renderAllTable();toast('Preset applied');});
+function renderColPop(){$('#colPop').innerHTML=COLS.map(c=>`<label><input type="checkbox" class="cbx" data-col="${c.key}" ${S.hiddenCols.has(c.key)?'':'checked'}> ${c.label}</label>`).join('');$$('#colPop input[data-col]').forEach(cb=>cb.onchange=()=>{const k=cb.dataset.col;cb.checked?S.hiddenCols.delete(k):S.hiddenCols.add(k);localStorage.setItem('ava_hidecols',JSON.stringify([...S.hiddenCols]));renderAllTable();});}
+$('#colBtn').onclick=e=>{e.stopPropagation();const p=$('#colPop'),r=$('#colBtn').getBoundingClientRect();p.style.display=p.style.display==='block'?'none':'block';p.style.top=(r.bottom+8)+'px';p.style.left=Math.max(10,r.right-210)+'px';};
+document.addEventListener('click',()=>$('#colPop').style.display='none');$('#colPop').onclick=e=>e.stopPropagation();
+$('#exportCsv').onclick=()=>{const rows=getFiltered(),cols=COLS.map(c=>c.key),header=COLS.map(c=>c.label).concat(['Link']).join(',');download('tiktok_videos_filtered.csv',[header,...rows.map(r=>cols.map(k=>csv(r[k])).concat([csv(r.link)]).join(','))].join('\n'));};
+function csv(v){v=String(v==null?'':v);return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v;}
+$('#addAllBasket').onclick=()=>{getFiltered().forEach(addB);updateBasket();renderAllTable();toast('Added visible videos');};
+
+function addB(r){S.basket.set(r.link,r);}
+function refreshStars(){$$('.star-btn').forEach(b=>{const c=S.creators.find(x=>x.username===b.dataset.ball);if(c)b.classList.toggle('on',c.vids.length>0&&c.vids.every(v=>S.basket.has(v.link)));});}
+function updateBasket(){const n=S.basket.size;$('#basketCount').textContent=n;$('#basketCount2').textContent=n;$('#basketBody').innerHTML=n?[...S.basket.values()].map(r=>`<div class="bitem"><span class="rm" data-rm="${esc(r.link)}">✕</span><div class="u">@${esc(r.username)}</div><div class="meta">${fmtDate(r.dateStr)} · ${r.gmv>0?money(r.gmv):'$0'} · ${r.sold||0} sold</div><div class="lk">${esc(r.link)}</div></div>`).join(''):'<div class="empty"><span class="em">🛒</span>Your shortlist is empty.<br><span style="font-size:12px;font-weight:500">Tick the 🛒 box on any video to add it.</span></div>';$$('#basketBody [data-rm]').forEach(x=>x.onclick=()=>{S.basket.delete(x.dataset.rm);updateBasket();syncCb();});refreshStars();}
+function syncCb(){$$('.bcb').forEach(cb=>cb.checked=S.basket.has(cb.dataset.link));}
+function bindCommon(){$$('.bcb').forEach(cb=>cb.onchange=()=>{const l=cb.dataset.link,r=S.rows.find(x=>x.link===l);if(cb.checked&&r)addB(r);else S.basket.delete(l);updateBasket();syncCb();});$$('[data-peek]').forEach(b=>b.onclick=()=>peek(b.dataset.peek));}
+$('#basketBtn').onclick=()=>$('#drawer').classList.toggle('on');
+$('#closeDrawer').onclick=()=>$('#drawer').classList.remove('on');
+$('#copyBasket').onclick=()=>copy([...S.basket.values()].map(r=>r.link).join('\n'));
+$('#copyBasketLabeled').onclick=()=>copy([...S.basket.values()].map(r=>`@${r.username}\n${r.link}`).join('\n\n'));
+$('#clearBasket').onclick=()=>{S.basket.clear();updateBasket();syncCb();};
+$('#csvBasket').onclick=()=>{const rows=[...S.basket.values()];download('shortlist.csv',['Creator,Date,GMV,Sold,CTR,Link',...rows.map(r=>['@'+r.username,r.dateStr,r.gmv,r.sold,r.ctr+'%',csv(r.link)].join(','))].join('\n'));};
+
+function peek(link){const r=S.rows.find(x=>x.link===link);if(!r)return;$('#modalTitle').textContent='@'+r.username+' · '+fmtDate(r.dateStr);const st=[['GMV',money(r.gmv)],['Items sold',r.sold],['Shoppable video GMV',money(r.svGmv)],['Avg order value',money(r.aov)],['Est. commission',money(r.commission)],['Est. flat fee',r.flatFee?money(r.flatFee):'—'],['Affiliate orders',r.orders],['Impressions',num(r.impressions)],['CTR',r.ctr.toFixed(2)+'%'],['GPM',r.gpm.toFixed(1)],['Items refunded',r.refunded],['Refunded GMV',money(r.refundedGmv)],['Comments',num(r.comments)],['Likes',num(r.likes)]];
+  $('#modalBody').innerHTML=`${r.name?`<p class="mut" style="font-size:13px;margin:0 0 14px;line-height:1.5">${esc(r.name)}</p>`:''}<div class="kv">${st.map(s=>`<div class="it"><span>${s[0]}</span><b>${s[1]}</b></div>`).join('')}</div><div class="row" style="margin-top:16px"><a class="btn" href="${esc(r.link)}" target="_blank" rel="noopener">▶ Open on TikTok</a><button class="btn indigo" id="embedBtn">▶ Preview here</button><button class="btn ghost" id="peekB">${S.basket.has(r.link)?'★ In shortlist':'⭐ Shortlist'}</button></div><div class="notice">Inline preview loads TikTok's embed script and needs internet — the rest of the tool works fully offline.</div><div id="embedHolder" style="margin-top:14px"></div>`;
+  $('#modal').classList.add('on');
+  $('#embedBtn').onclick=()=>{const h=$('#embedHolder'),m=link.match(/video\/(\d+)/),vid=m?m[1]:'';h.innerHTML=`<blockquote class="tiktok-embed" cite="${esc(link)}" data-video-id="${vid}" style="max-width:605px;min-width:325px;margin:0 auto"><section></section></blockquote>`;const s=document.createElement('script');s.src='https://www.tiktok.com/embed.js';s.async=true;h.appendChild(s);};
+  $('#peekB').onclick=()=>{S.basket.has(r.link)?S.basket.delete(r.link):addB(r);updateBasket();syncCb();peek(r.link);};
+}
+$('#closeModal').onclick=()=>$('#modal').classList.remove('on');
+$('#modal').onclick=e=>{if(e.target.id==='modal')$('#modal').classList.remove('on');};
+
+function applyTheme(){document.body.setAttribute('data-theme',S.theme);$('#themeIc').textContent=S.theme==='dark'?'☀️':'🌙';if(S.chart)renderTrend();}
+$('#themeBtn').onclick=()=>{S.theme=S.theme==='dark'?'light':'dark';localStorage.setItem('ava_theme',S.theme);applyTheme();};
+function applyFmtLabel(){$('#dateFmtLbl').textContent=S.dateFmt==='iso'?'2026-05-29':'29 May, 2026';}
+$('#dateFmtBtn').onclick=()=>{S.dateFmt=S.dateFmt==='iso'?'nice':'iso';localStorage.setItem('ava_datefmt',S.dateFmt);applyFmtLabel();if(S.rows.length){renderStats();renderTrend();renderOverviewLists();renderDateChips();renderDateOut();renderCreators();renderProducts();renderTop();renderAllTable();updateBasket();}};
+$('#resetBtn').onclick=()=>{$('#shell').classList.add('hidden');$('#loader').classList.remove('hidden');S.rows=[];selDates.clear();S.basket.clear();S.openCreators.clear();S.openProducts.clear();S.openMonths.clear();S.monthsInit=false;$('#filemeta').textContent='';fi.value='';};
+
+function copy(t){navigator.clipboard.writeText(t).then(()=>{const n=t.split('\n').filter(l=>l.startsWith('http')).length;toast(n?('Copied '+n+' links'):'Copied');}).catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Copied');});}
+function download(n,c){const b=new Blob([c],{type:'text/csv'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;a.click();URL.revokeObjectURL(a.href);toast('Downloaded '+n);}
+
+applyTheme();applyFmtLabel();
+</script>
+</body>
+</html>
